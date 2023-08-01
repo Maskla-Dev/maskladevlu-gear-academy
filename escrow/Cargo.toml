@@ -1,0 +1,21 @@
+[package]
+name = "escrow"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+gstd.workspace = true
+parity-scale-codec.workspace = true
+scale-info.workspace = true
+escrow-io.workspace = true
+
+[build-dependencies]
+gmeta.workspace = true
+gear-wasm-builder.workspace = true
+escrow-io.workspace = true
+
+[dev-dependencies]
+gtest.workspace = true
