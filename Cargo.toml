@@ -1,7 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["tamagotchi", "tamagotchi/io"]
-
+members = ["tamagotchi", "tamagotchi/io","escrow", "escrow/io", "state"]
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
@@ -20,3 +19,4 @@ parity-scale-codec = { version = "3", default-features = false }
 scale-info = { version = "2", default-features = false }
 # IO dependencies
 tamagotchi-io = { path = "tamagotchi/io" }
+escrow-io = { path = "escrow/io" }
