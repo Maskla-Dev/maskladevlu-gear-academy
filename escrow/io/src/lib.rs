@@ -1,6 +1,6 @@
 #![no_std]
 use gmeta::{In, InOut, Metadata};
-use gstd::{ActorId, Decode, Encode, TypeInfo, Debug, PartialEq, Default};
+use gstd::{ActorId, Decode, Encode, TypeInfo, Debug, PartialEq, Default, debug};
 
 pub struct EscrowMetadata;
 
@@ -62,5 +62,13 @@ impl Escrow {
         );
         self.state = EscrowState::AwaitingDelivery;
     }
-    pub fn confirm_delivery(&mut self) {}
+    pub fn confirm_delivery(&mut self, source: &ActorId) {
+        debug!("Source: {:?}", source);
+        debug!("Buyer: {:?}", self.buyer);
+        assert_eq!(self.buyer, *source, "The message sender must be the buyer");
+        debug!("Current State: {:?}", self.state);
+        assert_eq!(self.state, EscrowState::AwaitingDelivery, "State must be 'Awaiting delivery'");
+        self.state = EscrowState::Closed;
+        debug!("Current State: {:?}", self.state);
+    }
 }

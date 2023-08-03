@@ -41,6 +41,36 @@ fn deposit_failures() {
     assert!(res.main_failed());
 }
 
+#[test]
+fn confirm_delivery(){
+    let sys = System::new();
+    init_escrow(&sys);
+    let escrow = sys.get_program(ESCROW_ID);
+    //Buyer get funds via mint
+    sys.mint_to(BUYER, PRICE);
+    let res = escrow.send_with_value(BUYER, EscrowAction::Deposit, PRICE);
+    let log = Log::builder()
+        .dest(BUYER)
+        .payload(EscrowEvent::FundsDeposited);
+    //Check that funds were deposited
+    assert!(res.contains(&log));
+    let escrow_balance = sys.balance_of(ESCROW_ID);
+    //Check that funds were deposited to escrow
+    assert_eq!(escrow_balance, PRICE);
+    let res = escrow.send(BUYER, EscrowAction::ConfirmDelivery);
+    //Check that delivery was confirmed
+    assert!(!res.main_failed());
+    //Claim funds from mailbox to seller
+    sys.claim_value_from_mailbox(SELLER);
+    //Check that funds were sent to seller
+    assert_eq!(sys.balance_of(SELLER), PRICE);
+    let log = Log::builder()
+        .dest(BUYER)
+        .payload(EscrowEvent::DeliveryConfirmed);
+    //Check that buyer received confirmation
+    assert!(res.contains(&log));
+}
+
 fn init_escrow(sys: &System) {
     sys.init_logger();
     let escrow = Program::current(&sys);
