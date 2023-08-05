@@ -17,6 +17,7 @@ extern "C" fn init() {
         entertained_block: current_block_height,
         rested: tamagotchi_io::MIN_MOOD_VALUE,
         rested_block: current_block_height,
+        allowed_account: None,
     };
     debug!("Tamagotchi info: {:?}", tamagotchi);
     unsafe {
@@ -32,23 +33,42 @@ extern "C" fn handle() {
     debug!("Block {:?}", current_block_height);
     match action {
         TmAction::Feed => {
+            assert!(tamagotchi.verify_permission(msg::source()), "Only owner and allowed account can interact with this tamagotchi");
             tamagotchi.feed(current_block_height);
             msg::reply(TmEvent::Fed, 0).expect("reply failed on feed");
-        },
+        }
         TmAction::Play => {
+            assert!(tamagotchi.verify_permission(msg::source()), "Only owner and allowed account can interact with this tamagotchi");
             tamagotchi.play(current_block_height);
             msg::reply(TmEvent::Entertained, 0).expect("reply failed on entertain");
-        },
+        }
         TmAction::Sleep => {
+            assert!(tamagotchi.verify_permission(msg::source()), "Only owner and allowed account can interact with this tamagotchi");
             tamagotchi.sleep(current_block_height);
             msg::reply(TmEvent::Slept, 0).expect("reply failed on sleep");
-        },
+        }
         TmAction::Name => {
             msg::reply(TmEvent::Name(tamagotchi.name.clone()), 0).expect("reply failed on name");
-        },
+        }
         TmAction::Age => {
-            msg::reply(TmEvent::Age(exec::block_timestamp() - tamagotchi.date_of_birth), 0).expect("reply failed on age");
-        },
+            msg::reply(
+                TmEvent::Age(exec::block_timestamp() - tamagotchi.date_of_birth),
+                0,
+            )
+            .expect("reply failed on age");
+        }
+        TmAction::Transfer(new_owner) => {
+            assert!(tamagotchi.verify_ownership(msg::source()), "Only owner can transfer this tamagotchi");
+            tamagotchi.owner = new_owner;
+        }
+        TmAction::Approve(allowed_account) => {
+            assert!(tamagotchi.verify_ownership(msg::source()), "Only owner can approve an account");
+            tamagotchi.allowed_account = Some(allowed_account);
+        }
+        TmAction::RevokeApproval => {
+            assert!(tamagotchi.verify_ownership(msg::source()), "Only owner can revoke an account");
+            tamagotchi.allowed_account = None;
+        }
     }
 }
 
