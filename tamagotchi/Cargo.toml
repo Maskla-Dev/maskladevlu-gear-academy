@@ -11,6 +11,7 @@ gstd.workspace = true
 parity-scale-codec.workspace = true
 scale-info.workspace = true
 tamagotchi-io.workspace = true
+store-io.workspace = true
 
 [build-dependencies]
 gmeta.workspace = true
@@ -19,3 +20,5 @@ tamagotchi-io.workspace = true
 
 [dev-dependencies]
 gtest.workspace = true
+ft-main-io.workspace = true
+store-io.workspace = true
