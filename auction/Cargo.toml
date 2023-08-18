@@ -1,0 +1,21 @@
+[package]
+name = "auction"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+gstd.workspace = true
+parity-scale-codec.workspace = true
+scale-info.workspace = true
+auction-io.workspace = true
+store-io.workspace = true
+
+[build-dependencies]
+gmeta.workspace = true
+gear-wasm-builder.workspace = true
+tamagotchi-io.workspace = true
+
+[dev-dependencies]
+gtest.workspace = true

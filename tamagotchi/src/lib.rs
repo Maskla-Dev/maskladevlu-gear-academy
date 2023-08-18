@@ -133,6 +133,9 @@ async fn main() {
             debug!("Successfully approved tokens");
             msg::reply(approval_result, 0).expect("Error sending approval result");
         }
+        TmOwner::Owner => {
+            msg::reply(TmEvent::Owner(tamagotchi.owner), 0).expect("reply failed on owner");
+        }
     }
 }
 
