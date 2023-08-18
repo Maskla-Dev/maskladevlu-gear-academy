@@ -91,7 +91,7 @@ impl TamagotchiState {
     }
 
     pub async fn approve_tokens(&mut self, account: &ActorId, amount: u128) -> TmEvent {
-        let (transaction_id, account, amount) = if let Some((
+        let (transaction_id, amount) = if let Some((
             ft_transaction_id,
             prev_account,
             prev_amount,
