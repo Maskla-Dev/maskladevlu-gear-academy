@@ -72,10 +72,7 @@ impl TamagotchiState {
         self.owner == source
     }
     pub fn verify_allowed_account(&self, source: ActorId) -> bool {
-        match self.allowed_account {
-            Some(account) => account == source,
-            None => false,
-        }
+        self.allowed_account == Some(source)
     }
     pub fn verify_permission(&self, source: ActorId) -> bool {
         self.verify_ownership(source) || self.verify_allowed_account(source)
