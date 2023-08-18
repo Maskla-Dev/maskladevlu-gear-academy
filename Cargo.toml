@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["tamagotchi", "tamagotchi/io"]
+members = ["tamagotchi", "tamagotchi/io", "auction", "auction/io"]
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
@@ -20,5 +20,6 @@ scale-info = { version = "2", default-features = false }
 # IO dependencies
 tamagotchi-io = { path = "tamagotchi/io" }
 # store-io = { path = "store/io" }
-ft-main-io = { git = "https://github.com/gear-foundation/dapps-sharded-fungible-token.git"}
-store-io = { git = "https://github.com/gear-foundation/dapps-smart-contract-academy.git"  }
+ft-main-io = { git = "https://github.com/gear-foundation/dapps-sharded-fungible-token.git" }
+store-io = { git = "https://github.com/gear-foundation/dapps-smart-contract-academy.git" }
+auction-io = { path = "auction/io" }

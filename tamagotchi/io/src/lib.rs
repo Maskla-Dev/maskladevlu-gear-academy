@@ -155,6 +155,7 @@ pub enum TmAction {
         store_id: ActorId,
         attribute_id: AttributeId,
     },
+    Owner
 }
 
 #[derive(Encode, Decode, TypeInfo, Debug)]
@@ -173,4 +174,5 @@ pub enum TmEvent {
     AttributeBought(AttributeId),
     CompletePrevPurchase(AttributeId),
     ErrorDuringPurchase,
+    Owner(ActorId)
 }
