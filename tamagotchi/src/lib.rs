@@ -18,9 +18,6 @@ extern "C" fn init() {
         entertained_block: current_block_height,
         rested: tamagotchi_io::MIN_MOOD_VALUE,
         rested_block: current_block_height,
-        allowed_account: None,
-        ft_contract: None,
-        transaction_id: 0,
         ..Default::default()
     };
     debug!("Tamagotchi info: {:?}", tamagotchi);
