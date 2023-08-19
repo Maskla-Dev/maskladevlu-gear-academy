@@ -31,6 +31,7 @@ async fn main() {
     let action: TmAction = msg::load().expect("no action given");
     let tamagotchi = unsafe { STATE.get_or_insert(Default::default()) };
     let current_block_height: u64 = exec::block_height() as u64;
+    tamagotchi.update_mood(current_block_height);
     debug!("Block {:?}", current_block_height);
     match action {
         TmAction::Feed => {
@@ -38,7 +39,7 @@ async fn main() {
                 tamagotchi.verify_permission(msg::source()),
                 "Only owner and allowed account can interact with this tamagotchi"
             );
-            tamagotchi.feed(current_block_height);
+            tamagotchi.feed();
             msg::reply(TmEvent::Fed, 0).expect("reply failed on feed");
         }
         TmAction::Play => {
@@ -46,7 +47,7 @@ async fn main() {
                 tamagotchi.verify_permission(msg::source()),
                 "Only owner and allowed account can interact with this tamagotchi"
             );
-            tamagotchi.play(current_block_height);
+            tamagotchi.play();
             msg::reply(TmEvent::Entertained, 0).expect("reply failed on entertain");
         }
         TmAction::Sleep => {
@@ -54,7 +55,7 @@ async fn main() {
                 tamagotchi.verify_permission(msg::source()),
                 "Only owner and allowed account can interact with this tamagotchi"
             );
-            tamagotchi.sleep(current_block_height);
+            tamagotchi.sleep();
             msg::reply(TmEvent::Slept, 0).expect("reply failed on sleep");
         }
         TmAction::Name => {
@@ -133,8 +134,18 @@ async fn main() {
             debug!("Successfully approved tokens");
             msg::reply(approval_result, 0).expect("Error sending approval result");
         }
-        TmOwner::Owner => {
+        TmAction::Owner => {
             msg::reply(TmEvent::Owner(tamagotchi.owner), 0).expect("reply failed on owner");
+        }
+        TmAction::CheckState => {
+            tamagotchi.check_state_flow();
+        }
+        TmAction::ReserveGas {
+            reservation_amount,
+            duration,
+        } => {
+            msg::reply(tamagotchi.make_reservation(reservation_amount, duration), 0)
+                .expect("reply failed on reserve gas");
         }
     }
 }
