@@ -149,7 +149,6 @@ impl TamagotchiState {
     }
 
     pub fn check_state_flow(&mut self) {
-        let mut reservation_id: ReservationId;
         let events: [TmEvent; 3] = [TmEvent::FeedMe, TmEvent::PlayWithMe, TmEvent::WantToSleep];
         for event in events.iter() {
             if self.reservations.is_empty() {
