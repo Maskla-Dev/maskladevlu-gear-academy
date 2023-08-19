@@ -1,7 +1,7 @@
 #![no_std]
 use gstd::{debug, exec, msg, prelude::*};
 use store_io::{StoreAction, StoreEvent};
-use tamagotchi_io::{TamagotchiState, TmAction, TmEvent};
+use tamagotchi_io::{TamagotchiState, TmAction, TmEvent, CHECK_INTERVAL};
 
 static mut STATE: Option<TamagotchiState> = None;
 
@@ -24,6 +24,7 @@ extern "C" fn init() {
     unsafe {
         STATE = Some(tamagotchi);
     }
+    msg::send_delayed(exec::program_id(), TmAction::CheckState, 0, CHECK_INTERVAL).expect("Failed to send delayed in init");
 }
 
 #[gstd::async_main]
@@ -146,6 +147,7 @@ async fn main() {
         } => {
             msg::reply(tamagotchi.make_reservation(reservation_amount, duration), 0)
                 .expect("reply failed on reserve gas");
+            msg::send_delayed(exec::program_id(), TmAction::CheckState, 0, CHECK_INTERVAL).expect("Failed to send delayed in reserve gas");
         }
     }
 }
