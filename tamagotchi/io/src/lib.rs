@@ -167,24 +167,11 @@ impl TamagotchiState {
 
     fn check_mood_in_limit(&self, mood: &TmEvent) -> TmEvent {
         match mood {
-            TmEvent::FeedMe => {
-                if self.fed <= MOOD_LIMIT {
-                    return TmEvent::FeedMe;
-                }
-            }
-            TmEvent::PlayWithMe => {
-                if self.entertained <= MOOD_LIMIT {
-                    return TmEvent::PlayWithMe;
-                }
-            }
-            TmEvent::WantToSleep => {
-                if self.rested <= MOOD_LIMIT {
-                    return TmEvent::WantToSleep;
-                }
-            }
-            _ => {}
+            TmEvent::FeedMe if self.fed <= MOOD_LIMIT => TmEvent::FeedMe,
+            TmEvent::PlayWithMe if self.entertained <= MOOD_LIMIT => TmEvent::PlayWithMe,
+            TmEvent::WantToSleep if self.rested <= MOOD_LIMIT => TmEvent::WantToSleep,
+            _ => TmEvent::SelfCheck,
         }
-        TmEvent::SelfCheck
     }
 
     fn send_check_feedback(&self, reservation_id: ReservationId, payload: TmEvent) {
