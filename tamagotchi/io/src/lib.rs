@@ -156,7 +156,7 @@ impl TamagotchiState {
                     .expect("Error sending make reservation message");
                 break;
             }
-            reservation_id = self.reservations.pop().unwrap();
+            let reservation_id = self.reservations.pop().unwrap();
             if self.check_mood_in_limit(event) != TmEvent::SelfCheck {
                 self.send_check_feedback(reservation_id, event.clone());
             }
