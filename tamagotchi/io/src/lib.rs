@@ -1,7 +1,7 @@
 #![no_std]
 use ft_main_io::{FTokenAction, FTokenEvent, LogicAction};
 use gmeta::{In, InOut, Metadata};
-use gstd::{debug, msg, prelude::*, ActorId, Debug, Decode, Encode, TypeInfo};
+use gstd::{debug, exec, msg, prelude::*, ActorId, Debug, Decode, Encode, ReservationId, TypeInfo};
 use store_io::{AttributeId, TransactionId};
 
 pub struct TamagotchiMetadata;
@@ -24,6 +24,9 @@ pub const FILL_PER_ENTERTAINMENT: u64 = 1000;
 pub const MAX_MOOD_VALUE: u64 = 10000;
 pub const MIN_MOOD_VALUE: u64 = 1;
 
+pub const MOOD_LIMIT: u64 = 1000;
+pub const CHECK_INTERVAL: u32 = 60;
+
 #[derive(Default, Encode, Decode, TypeInfo, Debug)]
 pub struct TamagotchiState {
     pub name: String,
@@ -39,30 +42,37 @@ pub struct TamagotchiState {
     pub ft_contract: Option<ActorId>,
     pub transaction_id: u64,
     pub approve_transaction: Option<(TransactionId, ActorId, u128)>,
+    pub reservations: Vec<ReservationId>,
 }
 
 impl TamagotchiState {
-    pub fn feed(&mut self, current_block_height: u64) {
-        debug!("Fed block {:?}", self.fed_block);
-        debug!("Total Height {:?}", current_block_height - self.fed_block);
-        self.fed_block = current_block_height;
-        self.fed += FILL_PER_FEED
+    pub fn update_mood(&mut self, current_block_height: u64) {
+        self.fed = self
+            .fed
             .saturating_sub(HUNGER_PER_BLOCK * (current_block_height - self.fed_block));
+        self.fed_block = current_block_height;
+        self.entertained = self
+            .entertained
+            .saturating_sub(BOREDOM_PER_BLOCK * (current_block_height - self.entertained_block));
+        self.entertained_block = current_block_height;
+        self.rested = self
+            .rested
+            .saturating_sub(ENERGY_PER_BLOCK * (current_block_height - self.rested_block));
+        self.rested_block = current_block_height;
+    }
+
+    pub fn feed(&mut self) {
+        self.fed += FILL_PER_FEED;
         TamagotchiState::verify_limit(&mut self.fed);
     }
 
-    pub fn play(&mut self, current_block_height: u64) {
-        self.entertained_block = current_block_height;
-        self.entertained += FILL_PER_ENTERTAINMENT
-            .saturating_sub(BOREDOM_PER_BLOCK * (current_block_height - self.entertained_block));
+    pub fn play(&mut self) {
+        self.entertained += FILL_PER_ENTERTAINMENT;
         TamagotchiState::verify_limit(&mut self.entertained);
     }
 
-    pub fn sleep(&mut self, current_block_height: u64) {
-        TamagotchiState::verify_limit(&mut self.rested);
-        self.rested_block = current_block_height;
-        self.rested += FILL_PER_SLEEP
-            .saturating_sub(ENERGY_PER_BLOCK * (current_block_height - self.rested_block));
+    pub fn sleep(&mut self) {
+        self.rested += FILL_PER_SLEEP;
         TamagotchiState::verify_limit(&mut self.rested);
     }
 
@@ -88,7 +98,7 @@ impl TamagotchiState {
     }
 
     pub async fn approve_tokens(&mut self, account: &ActorId, amount: u128) -> TmEvent {
-        let (transaction_id, amount) = if let Some((
+        let (transaction_id, account, amount) = if let Some((
             ft_transaction_id,
             prev_account,
             prev_amount,
@@ -131,6 +141,43 @@ impl TamagotchiState {
             panic!("FT contract not set");
         };
     }
+
+    pub fn make_reservation(&mut self, amount: u64, duration: u32) -> TmEvent {
+        let reservation_id = ReservationId::reserve(amount, duration).expect("Reservation failed");
+        self.reservations.push(reservation_id);
+        TmEvent::GasReserved
+    }
+
+    pub fn check_state_flow(&mut self) {
+        let events: [TmEvent; 3] = [TmEvent::FeedMe, TmEvent::PlayWithMe, TmEvent::WantToSleep];
+        for event in events.iter() {
+            if self.reservations.is_empty() {
+                msg::send(self.owner, TmEvent::MakeReservation, 0)
+                    .expect("Error sending make reservation message");
+                break;
+            }
+            let reservation_id = self.reservations.pop().unwrap();
+            if self.check_mood_in_limit(event) != TmEvent::SelfCheck {
+                self.send_check_feedback(reservation_id, event.clone());
+            }
+        }
+        msg::send_delayed(exec::program_id(), TmAction::CheckState, 0, CHECK_INTERVAL)
+            .expect("Error sending delayed message");
+    }
+
+    fn check_mood_in_limit(&self, mood: &TmEvent) -> TmEvent {
+        match mood {
+            TmEvent::FeedMe if self.fed <= MOOD_LIMIT => TmEvent::FeedMe,
+            TmEvent::PlayWithMe if self.entertained <= MOOD_LIMIT => TmEvent::PlayWithMe,
+            TmEvent::WantToSleep if self.rested <= MOOD_LIMIT => TmEvent::WantToSleep,
+            _ => TmEvent::SelfCheck,
+        }
+    }
+
+    fn send_check_feedback(&self, reservation_id: ReservationId, payload: TmEvent) {
+        msg::send_from_reservation(reservation_id, self.owner, payload, 0)
+            .expect("reply failed on state owner feedback");
+    }
 }
 
 #[derive(Encode, Decode, TypeInfo)]
@@ -152,10 +199,15 @@ pub enum TmAction {
         store_id: ActorId,
         attribute_id: AttributeId,
     },
-    Owner
+    Owner,
+    CheckState,
+    ReserveGas {
+        reservation_amount: u64,
+        duration: u32,
+    },
 }
 
-#[derive(Encode, Decode, TypeInfo, Debug)]
+#[derive(Encode, Decode, TypeInfo, Debug, PartialEq, Eq, Clone)]
 pub enum TmEvent {
     Name(String),
     Age(u64),
@@ -171,5 +223,11 @@ pub enum TmEvent {
     AttributeBought(AttributeId),
     CompletePrevPurchase(AttributeId),
     ErrorDuringPurchase,
-    Owner(ActorId)
+    Owner(ActorId),
+    FeedMe,
+    PlayWithMe,
+    WantToSleep,
+    MakeReservation,
+    GasReserved,
+    SelfCheck,
 }

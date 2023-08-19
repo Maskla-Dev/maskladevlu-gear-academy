@@ -1,7 +1,7 @@
 #![no_std]
 use gstd::{debug, exec, msg, prelude::*};
 use store_io::{StoreAction, StoreEvent};
-use tamagotchi_io::{TamagotchiState, TmAction, TmEvent};
+use tamagotchi_io::{TamagotchiState, TmAction, TmEvent, CHECK_INTERVAL};
 
 static mut STATE: Option<TamagotchiState> = None;
 
@@ -24,6 +24,7 @@ extern "C" fn init() {
     unsafe {
         STATE = Some(tamagotchi);
     }
+    msg::send_delayed(exec::program_id(), TmAction::CheckState, 0, CHECK_INTERVAL).expect("Failed to send delayed in init");
 }
 
 #[gstd::async_main]
@@ -31,6 +32,7 @@ async fn main() {
     let action: TmAction = msg::load().expect("no action given");
     let tamagotchi = unsafe { STATE.get_or_insert(Default::default()) };
     let current_block_height: u64 = exec::block_height() as u64;
+    tamagotchi.update_mood(current_block_height);
     debug!("Block {:?}", current_block_height);
     match action {
         TmAction::Feed => {
@@ -38,7 +40,7 @@ async fn main() {
                 tamagotchi.verify_permission(msg::source()),
                 "Only owner and allowed account can interact with this tamagotchi"
             );
-            tamagotchi.feed(current_block_height);
+            tamagotchi.feed();
             msg::reply(TmEvent::Fed, 0).expect("reply failed on feed");
         }
         TmAction::Play => {
@@ -46,7 +48,7 @@ async fn main() {
                 tamagotchi.verify_permission(msg::source()),
                 "Only owner and allowed account can interact with this tamagotchi"
             );
-            tamagotchi.play(current_block_height);
+            tamagotchi.play();
             msg::reply(TmEvent::Entertained, 0).expect("reply failed on entertain");
         }
         TmAction::Sleep => {
@@ -54,7 +56,7 @@ async fn main() {
                 tamagotchi.verify_permission(msg::source()),
                 "Only owner and allowed account can interact with this tamagotchi"
             );
-            tamagotchi.sleep(current_block_height);
+            tamagotchi.sleep();
             msg::reply(TmEvent::Slept, 0).expect("reply failed on sleep");
         }
         TmAction::Name => {
@@ -133,8 +135,19 @@ async fn main() {
             debug!("Successfully approved tokens");
             msg::reply(approval_result, 0).expect("Error sending approval result");
         }
-        TmOwner::Owner => {
+        TmAction::Owner => {
             msg::reply(TmEvent::Owner(tamagotchi.owner), 0).expect("reply failed on owner");
+        }
+        TmAction::CheckState => {
+            tamagotchi.check_state_flow();
+        }
+        TmAction::ReserveGas {
+            reservation_amount,
+            duration,
+        } => {
+            msg::reply(tamagotchi.make_reservation(reservation_amount, duration), 0)
+                .expect("reply failed on reserve gas");
+            msg::send_delayed(exec::program_id(), TmAction::CheckState, 0, CHECK_INTERVAL).expect("Failed to send delayed in reserve gas");
         }
     }
 }
