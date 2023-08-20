@@ -1,21 +1,16 @@
 [package]
-name = "escrow"
+name = "tamagotchi-io"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
+license.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+gmeta.workspace = true
 gstd.workspace = true
 parity-scale-codec.workspace = true
 scale-info.workspace = true
-escrow-io.workspace = true
-
-[build-dependencies]
-gmeta.workspace = true
-gear-wasm-builder.workspace = true
-escrow-io.workspace = true
-
-[dev-dependencies]
-gtest.workspace = true
+ft-main-io.workspace = true
+store-io.workspace = true
