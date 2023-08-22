@@ -1,6 +1,15 @@
 [workspace]
 resolver = "2"
-members = ["tamagotchi", "tamagotchi/io"]
+members = [
+    "tamagotchi",
+    "tamagotchi/io",
+    "escrow-factory",
+    "escrow-factory/io",
+    "escrow",
+    "escrow/io",
+    "tamagotchi-factory",
+    "tamagotchi-factory/io",
+]
 [workspace.package]
 version = "0.1.0"
 edition = "2021"
@@ -19,6 +28,8 @@ parity-scale-codec = { version = "3", default-features = false }
 scale-info = { version = "2", default-features = false }
 # IO dependencies
 tamagotchi-io = { path = "tamagotchi/io" }
-# store-io = { path = "store/io" }
+escrow-factory-io = { path = "escrow-factory/io" }
 ft-main-io = { git = "https://github.com/gear-foundation/dapps-sharded-fungible-token.git" }
 store-io = { git = "https://github.com/gear-foundation/dapps-smart-contract-academy.git" }
+escrow-io = { path = "escrow/io" }
+tamagotchi-factory-io = { path = "tamagotchi-factory/io" }
