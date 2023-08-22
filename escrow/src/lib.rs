@@ -1,6 +1,6 @@
 #![no_std]
 use escrow_io::{EscrowAction, EscrowEvent, EscrowState, InitEscrow};
-use gstd::{msg, prelude::*, ActorId};
+use gstd::{msg, prelude::*, ActorId, debug};
 static mut ESCROW: Option<Escrow> = None;
 
 #[derive(Default, Encode, Decode, TypeInfo)]
@@ -43,18 +43,17 @@ impl Escrow {
     }
 
     fn confirm_delivery(&mut self, account: &ActorId) {
+        debug!("Confirm delivery...");
         assert_eq!(
             self.state,
             EscrowState::AwaitingDelivery,
             "State must be `AwaitingDelivery"
         );
-
         assert_eq!(
             msg::source(),
             self.factory_id,
             "The message sender must be a factory contract"
         );
-
         assert_eq!(
             account, &self.buyer,
             "The indicated account must be a buyer"

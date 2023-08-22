@@ -7,6 +7,8 @@ members = [
     "escrow-factory/io",
     "escrow",
     "escrow/io",
+    "tamagotchi-factory",
+    "tamagotchi-factory/io",
 ]
 [workspace.package]
 version = "0.1.0"
@@ -30,3 +32,4 @@ escrow-factory-io = { path = "escrow-factory/io" }
 ft-main-io = { git = "https://github.com/gear-foundation/dapps-sharded-fungible-token.git" }
 store-io = { git = "https://github.com/gear-foundation/dapps-smart-contract-academy.git" }
 escrow-io = { path = "escrow/io" }
+tamagotchi-factory-io = { path = "tamagotchi-factory/io" }

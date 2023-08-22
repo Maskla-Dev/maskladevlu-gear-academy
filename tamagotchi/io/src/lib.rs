@@ -7,12 +7,20 @@ use store_io::{AttributeId, TransactionId};
 pub struct TamagotchiMetadata;
 
 impl Metadata for TamagotchiMetadata {
-    type Init = In<String>;
+    type Init = In<InitTamagotchi>;
     type Handle = InOut<TmAction, TmEvent>;
     type Signal = ();
     type Reply = ();
     type Others = ();
     type State = TamagotchiState;
+}
+
+#[derive(Encode, Decode, TypeInfo, Debug)]
+pub struct InitTamagotchi {
+    pub name: String,
+    pub owner: ActorId,
+    pub commander: ActorId,
+    pub tamagotchi_bank: ActorId,
 }
 
 pub const HUNGER_PER_BLOCK: u64 = 1;
@@ -29,6 +37,7 @@ pub const CHECK_INTERVAL: u32 = 60;
 
 #[derive(Default, Encode, Decode, TypeInfo, Debug)]
 pub struct TamagotchiState {
+    pub commander: ActorId,
     pub name: String,
     pub date_of_birth: u64,
     pub owner: ActorId,
@@ -148,7 +157,7 @@ impl TamagotchiState {
         TmEvent::GasReserved
     }
 
-    pub fn check_state_flow(&mut self) {
+    pub fn check_state_flow(&mut self, source: &ActorId) {
         let events: [TmEvent; 3] = [TmEvent::FeedMe, TmEvent::PlayWithMe, TmEvent::WantToSleep];
         for event in events.iter() {
             if self.reservations.is_empty() {
@@ -161,7 +170,7 @@ impl TamagotchiState {
                 self.send_check_feedback(reservation_id, event.clone());
             }
         }
-        msg::send_delayed(exec::program_id(), TmAction::CheckState, 0, CHECK_INTERVAL)
+        msg::send_delayed(exec::program_id(), TmAction::CheckState(*source), 0, CHECK_INTERVAL)
             .expect("Error sending delayed message");
     }
 
@@ -180,28 +189,40 @@ impl TamagotchiState {
     }
 }
 
-#[derive(Encode, Decode, TypeInfo)]
+#[derive(Encode, Decode, TypeInfo, Debug)]
 pub enum TmAction {
     Name,
     Age,
-    Feed,
-    Sleep,
-    Play,
-    Transfer(ActorId),
-    Approve(ActorId),
-    RevokeApproval,
-    SetTokenContract(ActorId),
+    Feed(ActorId),
+    Sleep(ActorId),
+    Play(ActorId),
+    Transfer {
+        from: ActorId,
+        to: ActorId,
+    },
+    Approve {
+        from: ActorId,
+        to: ActorId,
+    },
+    RevokeApproval(ActorId),
+    SetTokenContract{
+        source: ActorId,
+        new_bank: ActorId
+    },
     ApproveTokens {
+        source: ActorId,
         account: ActorId,
         amount: u128,
     },
     BuyAttribute {
+        source: ActorId,
         store_id: ActorId,
         attribute_id: AttributeId,
     },
     Owner,
-    CheckState,
+    CheckState(ActorId),
     ReserveGas {
+        source: ActorId,
         reservation_amount: u64,
         duration: u32,
     },
@@ -209,6 +230,7 @@ pub enum TmAction {
 
 #[derive(Encode, Decode, TypeInfo, Debug, PartialEq, Eq, Clone)]
 pub enum TmEvent {
+    TamagotchiInitiliazed,
     Name(String),
     Age(u64),
     Fed,

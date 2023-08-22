@@ -1,15 +1,18 @@
 #![no_std]
 use escrow_factory_io::{EscrowFactory, FactoryAction};
-use gstd::{msg, prelude::*, CodeId};
+use gstd::{msg, prelude::*, CodeId, debug};
 
 static mut STATE: Option<EscrowFactory> = None;
 
 #[gstd::async_main]
 async fn main() {
     let action: FactoryAction = msg::load().expect("Cannot decode action message");
+    debug!("Action: {:?}", action);
     let factory = unsafe {
         STATE.get_or_insert(Default::default())
     };
+    debug!("Current state: {:?}", factory);
+    debug!("Source: {:?}", msg::source());
     match action {
         FactoryAction::CreateEscrow {
             seller,
@@ -19,9 +22,11 @@ async fn main() {
             factory.create_escrow(&seller, &buyer, price).await;
         }
         FactoryAction::Deposit(escrow_id) => {
+            debug!("Deposit...");
             factory.deposit(escrow_id, &msg::source()).await;
         }
         FactoryAction::ConfirmDelivery(escrow_id) => {
+            debug!("ConfirmDelivery...");
             factory.confirm_delivery(escrow_id, &msg::source()).await;
         }
     }
@@ -34,6 +39,7 @@ extern "C" fn init() {
         escrow_code_id,
         ..Default::default()
     };
+    debug!("Escrow factory initialized with {:?}", escrow_factory);
     unsafe {
         STATE = Some(escrow_factory);
     }

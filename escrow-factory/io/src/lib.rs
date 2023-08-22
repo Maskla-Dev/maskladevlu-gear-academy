@@ -2,7 +2,8 @@
 use escrow_io::{EscrowAction, EscrowEvent, InitEscrow};
 use gmeta::{In, InOut, Metadata};
 use gstd::{
-    msg, prelude::*, prog::ProgramGenerator, ActorId, CodeId, Decode, Default, Encode, TypeInfo,
+    debug, msg, prelude::*, prog::ProgramGenerator, ActorId, CodeId, Decode, Default,
+    Encode, TypeInfo,
 };
 
 pub struct EscrowFactoryMetadata;
@@ -19,7 +20,7 @@ impl Metadata for EscrowFactoryMetadata {
 pub type EscrowId = u64;
 const GAS_FOR_CREATION: u64 = 100_000_000;
 
-#[derive(Default, Encode, Decode, TypeInfo)]
+#[derive(Default, Encode, Decode, TypeInfo, Debug)]
 pub struct EscrowFactory {
     pub escrow_number: EscrowId,
     pub id_to_address: BTreeMap<EscrowId, ActorId>,
@@ -44,6 +45,10 @@ impl EscrowFactory {
         .await
         .expect("Program was not initialized");
         self.escrow_number = self.escrow_number.saturating_add(1);
+        debug!(
+            "Escrow {:?} created with id {:?}",
+            address, self.escrow_number
+        );
         self.id_to_address.insert(self.escrow_number, address);
         msg::reply(
             FactoryEvent::EscrowCreated {
@@ -57,6 +62,7 @@ impl EscrowFactory {
 
     pub async fn deposit(&self, escrow_id: EscrowId, source: &ActorId) {
         let escrow_address = self.get_escrow_address(escrow_id);
+        debug!("Escrow address: {:?}", escrow_address);
         send_message(&escrow_address, EscrowAction::Deposit(*source)).await;
         msg::reply(FactoryEvent::Deposited(escrow_id), 0)
             .expect("Error replying at: finishing deposit");
@@ -64,6 +70,7 @@ impl EscrowFactory {
 
     pub async fn confirm_delivery(&self, escrow_id: EscrowId, source: &ActorId) {
         let escrow_address = self.get_escrow_address(escrow_id);
+        debug!("Escrow address: {:?}", escrow_address);
         send_message(&escrow_address, EscrowAction::ConfirmDelivery(*source)).await;
         msg::reply(FactoryEvent::DeliveryConfirmed(escrow_id), 0)
             .expect("Error replying at: finishing delivery confirmation");
@@ -78,13 +85,15 @@ impl EscrowFactory {
 }
 
 async fn send_message(escrow_address: &ActorId, action: EscrowAction) {
-    msg::send_for_reply_as::<_, EscrowEvent>(escrow_address.clone(), action, msg::value(), 0)
-        .expect("Error sending message")
-        .await
-        .expect("Unnable to decode EscrowEvent");
+    let res =
+        msg::send_for_reply_as::<_, EscrowEvent>(escrow_address.clone(), action, msg::value(), 0)
+            .expect("Error sending message")
+            .await
+            .expect("Unnable to decode EscrowEvent");
+    debug!("EscrowEvent: {:?}", res);
 }
 
-#[derive(Encode, Decode, TypeInfo)]
+#[derive(Encode, Decode, TypeInfo, Debug)]
 pub enum FactoryAction {
     CreateEscrow {
         seller: ActorId,
@@ -95,7 +104,7 @@ pub enum FactoryAction {
     ConfirmDelivery(EscrowId),
 }
 
-#[derive(Encode, Decode, TypeInfo)]
+#[derive(Encode, Decode, TypeInfo, Debug)]
 pub enum FactoryEvent {
     EscrowCreated {
         escrow_id: EscrowId,

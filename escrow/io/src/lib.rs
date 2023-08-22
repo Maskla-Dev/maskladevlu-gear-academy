@@ -13,20 +13,20 @@ impl Metadata for EscrowMetadata {
     type State = EscrowState;
 }
 
-#[derive(Encode, Decode, TypeInfo)]
+#[derive(Encode, Decode, TypeInfo, Debug)]
 pub struct InitEscrow {
     pub seller: ActorId,
     pub buyer: ActorId,
     pub price: u128,
 }
 
-#[derive(Encode, Decode, TypeInfo)]
+#[derive(Encode, Decode, TypeInfo, Debug)]
 pub enum EscrowAction {
     Deposit(ActorId),
     ConfirmDelivery(ActorId),
 }
 
-#[derive(Encode, Decode, TypeInfo)]
+#[derive(Encode, Decode, TypeInfo, Debug)]
 pub enum EscrowEvent {
     ProgramInitialized,
     FundsDeposited,
@@ -47,7 +47,7 @@ impl Default for EscrowState {
     }
 }
 
-#[derive(Default, Encode, Decode, TypeInfo)]
+#[derive(Default, Encode, Decode, TypeInfo, Debug)]
 pub struct Escrow {
     pub factory_id: ActorId,
     pub seller: ActorId,
